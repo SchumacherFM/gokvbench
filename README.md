@@ -4,6 +4,22 @@ Based on the idea of https://gist.github.com/karlseguin/0ba24030fb12b10b686b
 
 Available persistent KV stores:
 
+OSX 10.9.5; Processor  2.4 GHz Intel Core i5; Memory  8 GB 1600 MHz DDR3; Late 2013
+
+```
+$ ./gokvbench -redis -bolt
+main.testBoltWrite	    5000	    290589 ns/op	   47425 B/op	      61 allocs/op
+main.testBoltRead	  500000	      2913 ns/op	     648 B/op	      13 allocs/op
+main.testRedisWrite	   30000	     50575 ns/op	     136 B/op	       8 allocs/op
+main.testRedisRead	   30000	     48657 ns/op	     128 B/op	       9 allocs/op
+
+Done!
+```
+
+More will follow...
+
+Old write test on old MacBook Air:
+
 ```
 $ ./gokvbench -bolt -gkvlite -redis -diskv -cznickv -ledisdb
 BoltDB	    3000	    461525 ns/op	   46333 B/op	      61 allocs/op
@@ -25,3 +41,26 @@ $ go run main.go -bolt -gkvlite -diskv -cznickv -ledisdb
 
 Make sure that Redis runs on `127.0.0.1:6379` and if you test postgres: `localhost:5432`
 
+Short discussion on [Twitter](https://twitter.com/schumacherfm/status/573060236166234112)
+
+### The MIT License (MIT)
+
+Copyright (c) 2015 Cyrill Schumacher and contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.

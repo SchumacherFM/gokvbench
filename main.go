@@ -1,21 +1,12 @@
+// The MIT License (MIT)
+
 package main
-
-/*
-@karlseguin:
-bolt      5000	    277963 ns/op
-redis    30000	     48081 ns/op
-pg       10000	    149691 ns/op
-
-Yes, the Bolt transactions could be batched. But so too could the PG transactions,
-and the Redis work could be pipelined. And that isn't always a workable solution.
-
-@schumacherfm:
-- requirement that data must be persisted some how
-*/
 
 import (
 	"encoding/binary"
 	"os"
+	"reflect"
+	"runtime"
 	"strconv"
 	"testing"
 
@@ -37,12 +28,17 @@ import (
 	// @todo mysql
 	// @todo sqlite3
 	// @todo https://github.com/golang/groupcache ???
+	"bytes"
+)
+
+const (
+	READ_GENERATOR_ITERATION = 1e5
 )
 
 type (
+	benchF func(b *testing.B)
 	stores struct {
-		name  string
-		bench func(b *testing.B)
+		bench []benchF
 		run   *bool
 	}
 )
@@ -51,39 +47,48 @@ func main() {
 	testAll := flag.Bool("all", false, "Run all tests")
 	tests := []*stores{
 		&stores{
-			name:  "BoltDB",
-			bench: testBolt,
-			run:   flag.Bool("bolt", false, ""),
+			bench: []benchF{
+				testPgWrite,
+			},
+			run: flag.Bool("postgres", false, ""),
 		},
 		&stores{
-			name:  "Redis",
-			bench: testRedis,
-			run:   flag.Bool("redis", false, ""),
+			bench: []benchF{
+				testRedisWrite,
+				testRedisRead,
+			},
+			run: flag.Bool("redis", false, ""),
 		},
 		&stores{
-			name:  "PostgreSQL",
-			bench: testPG,
-			run:   flag.Bool("postgres", false, ""),
+			bench: []benchF{
+				testBoltWrite,
+				testBoltRead,
+			},
+			run: flag.Bool("bolt", false, ""),
 		},
 		&stores{
-			name:  "gkvlite",
-			bench: testGkvlite,
-			run:   flag.Bool("gkvlite", false, ""),
+			bench: []benchF{
+				testGkvliteWrite,
+			},
+			run: flag.Bool("gkvlite", false, ""),
 		},
 		&stores{
-			name:  "diskv",
-			bench: testDiskv,
-			run:   flag.Bool("diskv", false, ""),
+			bench: []benchF{
+				testDiskvWrite,
+			},
+			run: flag.Bool("diskv", false, ""),
 		},
 		&stores{
-			name:  "cznickv",
-			bench: testCznicKv,
-			run:   flag.Bool("cznickv", false, ""),
+			bench: []benchF{
+				testCznicKvWrite,
+			},
+			run: flag.Bool("cznickv", false, ""),
 		},
 		&stores{
-			name:  "ledisdb",
-			bench: testLedisDb,
-			run:   flag.Bool("ledisdb", false, ""),
+			bench: []benchF{
+				testLedisDbWrite,
+			},
+			run: flag.Bool("ledisdb", false, ""),
 		},
 	}
 	flag.Parse()
@@ -94,8 +99,10 @@ func main() {
 			continue
 		}
 		ran = true
-		res := testing.Benchmark(test.bench)
-		fmt.Printf("%s\t%s\t%s\n", test.name, res.String(), res.MemString())
+		for _, f := range test.bench {
+			res := testing.Benchmark(f)
+			fmt.Printf("%s\t%s\t%s\n", funcName(f), res.String(), res.MemString())
+		}
 	}
 	if ran == false {
 		fmt.Println("No benchmark executed! Try -h switch for help.")
@@ -103,7 +110,7 @@ func main() {
 	fmt.Println("\nDone!")
 }
 
-func testPG(b *testing.B) {
+func testPgWrite(b *testing.B) {
 	conn, err := pgx.Connect(pgx.ConnConfig{Host: "localhost", Port: 5432, Database: "test"})
 	isDoh(err)
 	conn.Exec("truncate table ids")
@@ -115,7 +122,7 @@ func testPG(b *testing.B) {
 	}
 }
 
-func testRedis(b *testing.B) {
+func testRedisWrite(b *testing.B) {
 	conn, err := redis.Dial("tcp", "127.0.0.1:6379")
 	isDoh(err)
 	defer conn.Close()
@@ -128,7 +135,38 @@ func testRedis(b *testing.B) {
 	conn.Do("save")
 }
 
-func testBolt(b *testing.B) {
+func testRedisRead(b *testing.B) {
+	conn, err := redis.Dial("tcp", "127.0.0.1:6379")
+	isDoh(err)
+	defer conn.Close()
+	conn.Do("flushdb")
+	for i := 0; i < b.N; i++ {
+		k, v := kv(i)
+		conn.Do("set", k, v)
+	}
+	conn.Do("save")
+	for i := 0; i < b.N; i++ {
+		k, v := kv(i)
+		conn.Do("set", k, v)
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		k, v := kv(i)
+		rv, err := conn.Do("get", k)
+		if err != nil {
+			b.Error(err)
+		}
+		if rvb, ok := rv.([]byte); ok {
+			bc(b, v, rvb)
+		} else {
+			b.Errorf("Failed to convert %s", rv)
+		}
+	}
+
+}
+
+func testBoltWrite(b *testing.B) {
 	os.Remove("bolt.db")
 	db, err := bolt.Open("bolt.db", 0600, nil)
 	isDoh(err)
@@ -148,7 +186,38 @@ func testBolt(b *testing.B) {
 	}
 }
 
-func testGkvlite(b *testing.B) {
+func testBoltRead(b *testing.B) {
+	os.Remove("bolt.db")
+	db, err := bolt.Open("bolt.db", 0600, nil)
+	isDoh(err)
+	bucket := []byte("MAIN")
+	defer db.Close()
+	db.Update(func(tx *bolt.Tx) error {
+		tx.CreateBucketIfNotExists(bucket)
+		return nil
+	})
+
+	for i := 0; i < b.N; i++ {
+		k, v := kv(i)
+		db.Update(func(tx *bolt.Tx) error {
+			return tx.Bucket(bucket).Put(k, v)
+		})
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		k, v := kv(i)
+		db.View(func(tx *bolt.Tx) error {
+			bb := tx.Bucket(bucket)
+			bv := bb.Get(k)
+			bc(b, v, bv)
+			return nil
+		})
+
+	}
+}
+
+func testGkvliteWrite(b *testing.B) {
 	os.Remove("test.gkvlite")
 	f, err := os.Create("test.gkvlite")
 	isDoh(err)
@@ -165,7 +234,7 @@ func testGkvlite(b *testing.B) {
 	}
 }
 
-func testDiskv(b *testing.B) {
+func testDiskvWrite(b *testing.B) {
 	dir := "pbdiskv"
 	os.RemoveAll(dir)
 	d := diskv.New(diskv.Options{
@@ -182,7 +251,7 @@ func testDiskv(b *testing.B) {
 	}
 }
 
-func testCznicKv(b *testing.B) {
+func testCznicKvWrite(b *testing.B) {
 	os.Remove("cznic.db")
 	o := &cznic.Options{
 	//		VerifyDbBeforeOpen:  true,
@@ -200,7 +269,7 @@ func testCznicKv(b *testing.B) {
 	}
 }
 
-func testLedisDb(b *testing.B) {
+func testLedisDbWrite(b *testing.B) {
 	dataDir := "ledis-test"
 	os.RemoveAll(dataDir)
 	cfg := ledisConfig.NewConfigDefault()
@@ -234,5 +303,15 @@ func kvs(i int) (string, []byte) {
 func isDoh(err error) {
 	if err != nil {
 		panic(err)
+	}
+}
+
+func funcName(i interface{}) string {
+	return runtime.FuncForPC(reflect.ValueOf(i).Pointer()).Name()
+}
+
+func bc(b *testing.B, expected, actual []byte) {
+	if bytes.Compare(expected, actual) != 0 {
+		b.Fatal("Expected %s got %s", expected, actual)
 	}
 }
