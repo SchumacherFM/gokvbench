@@ -14,14 +14,14 @@ import (
 
 	"fmt"
 
-	"github.com/boltdb/bolt"
-	cznic "github.com/cznic/kv"
-	"github.com/garyburd/redigo/redis"
-	"github.com/jackc/pgx"
-	"github.com/peterbourgon/diskv"
-	ledisConfig "github.com/siddontang/ledisdb/config"
-	"github.com/siddontang/ledisdb/ledis"
-	"github.com/steveyen/gkvlite"
+	"github.com/SchumacherFM/gokvbench/Godeps/_workspace/src/github.com/boltdb/bolt"
+	cznic "github.com/SchumacherFM/gokvbench/Godeps/_workspace/src/github.com/cznic/kv"
+	"github.com/SchumacherFM/gokvbench/Godeps/_workspace/src/github.com/garyburd/redigo/redis"
+	"github.com/SchumacherFM/gokvbench/Godeps/_workspace/src/github.com/jackc/pgx"
+	"github.com/SchumacherFM/gokvbench/Godeps/_workspace/src/github.com/peterbourgon/diskv"
+	ledisConfig "github.com/SchumacherFM/gokvbench/Godeps/_workspace/src/github.com/siddontang/ledisdb/config"
+	"github.com/SchumacherFM/gokvbench/Godeps/_workspace/src/github.com/siddontang/ledisdb/ledis"
+	"github.com/SchumacherFM/gokvbench/Godeps/_workspace/src/github.com/steveyen/gkvlite"
 	// @todo https://github.com/zond/god
 	// @todo https://github.com/syndtr/goleveldb
 	// @todo https://github.com/HouzuoGuo/tiedot
