@@ -4,7 +4,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/SchumacherFM/gokvbench/Godeps/_workspace/src/github.com/boltdb/bolt"
+	"github.com/boltdb/bolt"
 )
 
 // Pages prints a list of all pages in a database.

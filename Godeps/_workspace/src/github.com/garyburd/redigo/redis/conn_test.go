@@ -24,8 +24,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/SchumacherFM/gokvbench/Godeps/_workspace/src/github.com/garyburd/redigo/redis"
 	"github.com/garyburd/redigo/internal/redistest"
+	"github.com/garyburd/redigo/redis"
 )
 
 var writeTests = []struct {

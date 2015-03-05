@@ -3,7 +3,7 @@ package pgx_test
 import (
 	"errors"
 	"fmt"
-	"github.com/SchumacherFM/gokvbench/Godeps/_workspace/src/github.com/jackc/pgx"
+	"github.com/jackc/pgx"
 	"regexp"
 	"strconv"
 )

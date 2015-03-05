@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/SchumacherFM/gokvbench/Godeps/_workspace/src/github.com/peterbourgon/diskv"
+	"github.com/peterbourgon/diskv"
 )
 
 var (

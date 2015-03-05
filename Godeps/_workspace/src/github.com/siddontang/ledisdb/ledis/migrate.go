@@ -2,7 +2,7 @@ package ledis
 
 import (
 	"fmt"
-	"github.com/SchumacherFM/gokvbench/Godeps/_workspace/src/github.com/siddontang/ledisdb/ledis/rdb"
+	"github.com/siddontang/ledisdb/ledis/rdb"
 )
 
 /*

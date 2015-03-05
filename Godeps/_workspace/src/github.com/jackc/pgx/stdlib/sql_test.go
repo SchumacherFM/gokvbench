@@ -3,8 +3,8 @@ package stdlib_test
 import (
 	"bytes"
 	"database/sql"
-	"github.com/SchumacherFM/gokvbench/Godeps/_workspace/src/github.com/jackc/pgx"
-	"github.com/SchumacherFM/gokvbench/Godeps/_workspace/src/github.com/jackc/pgx/stdlib"
+	"github.com/jackc/pgx"
+	"github.com/jackc/pgx/stdlib"
 	"testing"
 )
 

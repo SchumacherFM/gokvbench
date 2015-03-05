@@ -48,7 +48,7 @@ import (
 	"database/sql/driver"
 	"errors"
 	"fmt"
-	"github.com/SchumacherFM/gokvbench/Godeps/_workspace/src/github.com/jackc/pgx"
+	"github.com/jackc/pgx"
 	"io"
 )
 

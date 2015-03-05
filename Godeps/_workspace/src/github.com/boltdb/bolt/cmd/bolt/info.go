@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/SchumacherFM/gokvbench/Godeps/_workspace/src/github.com/boltdb/bolt"
+	"github.com/boltdb/bolt"
 )
 
 // Info prints basic information about a database.

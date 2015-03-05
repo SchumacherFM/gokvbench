@@ -14,14 +14,14 @@ import (
 
 	"fmt"
 
-	"github.com/SchumacherFM/gokvbench/Godeps/_workspace/src/github.com/boltdb/bolt"
-	cznic "github.com/SchumacherFM/gokvbench/Godeps/_workspace/src/github.com/cznic/kv"
-	"github.com/SchumacherFM/gokvbench/Godeps/_workspace/src/github.com/garyburd/redigo/redis"
-	"github.com/SchumacherFM/gokvbench/Godeps/_workspace/src/github.com/jackc/pgx"
-	"github.com/SchumacherFM/gokvbench/Godeps/_workspace/src/github.com/peterbourgon/diskv"
-	ledisConfig "github.com/SchumacherFM/gokvbench/Godeps/_workspace/src/github.com/siddontang/ledisdb/config"
-	"github.com/SchumacherFM/gokvbench/Godeps/_workspace/src/github.com/siddontang/ledisdb/ledis"
-	"github.com/SchumacherFM/gokvbench/Godeps/_workspace/src/github.com/steveyen/gkvlite"
+	"github.com/boltdb/bolt"
+	cznic "github.com/cznic/kv"
+	"github.com/garyburd/redigo/redis"
+	"github.com/jackc/pgx"
+	"github.com/peterbourgon/diskv"
+	ledisConfig "github.com/siddontang/ledisdb/config"
+	"github.com/siddontang/ledisdb/ledis"
+	"github.com/steveyen/gkvlite"
 	// @todo https://github.com/zond/god
 	// @todo https://github.com/syndtr/goleveldb
 	// @todo https://github.com/HouzuoGuo/tiedot
@@ -69,18 +69,21 @@ func main() {
 		&stores{
 			bench: []benchF{
 				testGkvliteWrite,
+				testGkvliteRead,
 			},
 			run: flag.Bool("gkvlite", false, ""),
 		},
 		&stores{
 			bench: []benchF{
 				testDiskvWrite,
+				testDiskvRead,
 			},
 			run: flag.Bool("diskv", false, ""),
 		},
 		&stores{
 			bench: []benchF{
 				testCznicKvWrite,
+				testCznicKvRead,
 			},
 			run: flag.Bool("cznickv", false, ""),
 		},
@@ -122,10 +125,9 @@ func testPgWrite(b *testing.B) {
 	}
 }
 
-func testRedisWrite(b *testing.B) {
+func redisWrite(b *testing.B) redis.Conn {
 	conn, err := redis.Dial("tcp", "127.0.0.1:6379")
 	isDoh(err)
-	defer conn.Close()
 	conn.Do("flushdb")
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -133,22 +135,17 @@ func testRedisWrite(b *testing.B) {
 		conn.Do("set", k, v)
 	}
 	conn.Do("save")
+	return conn
+}
+
+func testRedisWrite(b *testing.B) {
+	conn := redisWrite(b)
+	defer conn.Close()
 }
 
 func testRedisRead(b *testing.B) {
-	conn, err := redis.Dial("tcp", "127.0.0.1:6379")
-	isDoh(err)
+	conn := redisWrite(b)
 	defer conn.Close()
-	conn.Do("flushdb")
-	for i := 0; i < b.N; i++ {
-		k, v := kv(i)
-		conn.Do("set", k, v)
-	}
-	conn.Do("save")
-	for i := 0; i < b.N; i++ {
-		k, v := kv(i)
-		conn.Do("set", k, v)
-	}
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -166,12 +163,11 @@ func testRedisRead(b *testing.B) {
 
 }
 
-func testBoltWrite(b *testing.B) {
+func boltWrite(b *testing.B) (*bolt.DB, []byte) {
 	os.Remove("bolt.db")
 	db, err := bolt.Open("bolt.db", 0600, nil)
 	isDoh(err)
 	bucket := []byte("MAIN")
-	defer db.Close()
 	db.Update(func(tx *bolt.Tx) error {
 		tx.CreateBucketIfNotExists(bucket)
 		return nil
@@ -184,25 +180,17 @@ func testBoltWrite(b *testing.B) {
 			return tx.Bucket(bucket).Put(k, v)
 		})
 	}
+	return db, bucket
+}
+
+func testBoltWrite(b *testing.B) {
+	db, _ := boltWrite(b)
+	defer db.Close()
 }
 
 func testBoltRead(b *testing.B) {
-	os.Remove("bolt.db")
-	db, err := bolt.Open("bolt.db", 0600, nil)
-	isDoh(err)
-	bucket := []byte("MAIN")
+	db, bucket := boltWrite(b)
 	defer db.Close()
-	db.Update(func(tx *bolt.Tx) error {
-		tx.CreateBucketIfNotExists(bucket)
-		return nil
-	})
-
-	for i := 0; i < b.N; i++ {
-		k, v := kv(i)
-		db.Update(func(tx *bolt.Tx) error {
-			return tx.Bucket(bucket).Put(k, v)
-		})
-	}
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -213,17 +201,16 @@ func testBoltRead(b *testing.B) {
 			bc(b, v, bv)
 			return nil
 		})
-
 	}
 }
 
-func testGkvliteWrite(b *testing.B) {
+func gkvliteWrite(b *testing.B) (*os.File, *gkvlite.Store, *gkvlite.Collection) {
 	os.Remove("test.gkvlite")
 	f, err := os.Create("test.gkvlite")
 	isDoh(err)
-	defer f.Close()
+
 	s, err := gkvlite.NewStore(f)
-	defer s.Close()
+
 	defer f.Sync()
 	defer s.Flush()
 	c := s.SetCollection("MAIN", nil)
@@ -232,9 +219,31 @@ func testGkvliteWrite(b *testing.B) {
 		k, v := kv(i)
 		c.Set(k, v)
 	}
+	return f, s, c
 }
 
-func testDiskvWrite(b *testing.B) {
+func testGkvliteWrite(b *testing.B) {
+	f, s, _ := gkvliteWrite(b)
+	defer f.Close()
+	defer s.Close()
+}
+
+func testGkvliteRead(b *testing.B) {
+	f, s, c := gkvliteWrite(b)
+	defer f.Close()
+	defer s.Close()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		k, v := kv(i)
+		v2, err := c.Get(k)
+		if err != nil {
+			b.Error(err)
+		}
+		bc(b, v, v2)
+	}
+}
+
+func diskvWrite(b *testing.B) *diskv.Diskv {
 	dir := "pbdiskv"
 	os.RemoveAll(dir)
 	d := diskv.New(diskv.Options{
@@ -247,11 +256,28 @@ func testDiskvWrite(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		k, v := kvs(i)
 		isDoh(d.Write(k, v))
+	}
+	return d
+}
 
+func testDiskvWrite(b *testing.B) {
+	_ = diskvWrite(b)
+}
+
+func testDiskvRead(b *testing.B) {
+	d := diskvWrite(b)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		k, v := kvs(i)
+		v2, err := d.Read(k)
+		if err != nil {
+			b.Error(err)
+		}
+		bc(b, v, v2)
 	}
 }
 
-func testCznicKvWrite(b *testing.B) {
+func cznicKvWrite(b *testing.B) *cznic.DB {
 	os.Remove("cznic.db")
 	o := &cznic.Options{
 	//		VerifyDbBeforeOpen:  true,
@@ -261,11 +287,29 @@ func testCznicKvWrite(b *testing.B) {
 	}
 	db, err := cznic.Create("cznic.db", o)
 	isDoh(err)
-	defer db.Close()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		k, v := kv(i)
 		isDoh(db.Set(k, v))
+	}
+	return db
+}
+
+func testCznicKvWrite(b *testing.B) {
+	db := cznicKvWrite(b)
+	db.Close()
+}
+
+func testCznicKvRead(b *testing.B) {
+	db := cznicKvWrite(b)
+	defer db.Close()
+	for i := 0; i < b.N; i++ {
+		k, v := kv(i)
+		v2, err := db.Get(nil, k)
+		if err != nil {
+			b.Error(err)
+		}
+		bc(b, v, v2)
 	}
 }
 

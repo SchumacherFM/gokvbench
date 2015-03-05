@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/SchumacherFM/gokvbench/Godeps/_workspace/src/github.com/cznic/kv"
+	"github.com/cznic/kv"
 )
 
 var mk = flag.Bool("mk", false, "(dev) make dump.db")

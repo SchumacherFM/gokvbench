@@ -3,8 +3,8 @@ package main_test
 import (
 	"testing"
 
-	"github.com/SchumacherFM/gokvbench/Godeps/_workspace/src/github.com/boltdb/bolt"
-	. "github.com/SchumacherFM/gokvbench/Godeps/_workspace/src/github.com/boltdb/bolt/cmd/bolt"
+	"github.com/boltdb/bolt"
+	. "github.com/boltdb/bolt/cmd/bolt"
 )
 
 // Ensure that a value can be retrieved from the CLI.

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/SchumacherFM/gokvbench/Godeps/_workspace/src/github.com/steveyen/gkvlite"
+	"github.com/steveyen/gkvlite"
 )
 
 var keyFormat = flag.String("key-format", "string",

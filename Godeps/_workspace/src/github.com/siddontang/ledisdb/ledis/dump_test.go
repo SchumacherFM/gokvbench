@@ -2,7 +2,7 @@ package ledis
 
 import (
 	"bytes"
-	"github.com/SchumacherFM/gokvbench/Godeps/_workspace/src/github.com/siddontang/ledisdb/config"
+	"github.com/siddontang/ledisdb/config"
 	"github.com/siddontang/ledisdb/store"
 	"os"
 	"testing"

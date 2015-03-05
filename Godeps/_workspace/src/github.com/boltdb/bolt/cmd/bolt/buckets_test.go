@@ -3,12 +3,12 @@ package main_test
 import (
 	"testing"
 
-	"github.com/SchumacherFM/gokvbench/Godeps/_workspace/src/github.com/boltdb/bolt"
-	. "github.com/SchumacherFM/gokvbench/Godeps/_workspace/src/github.com/boltdb/bolt/cmd/bolt"
+	"github.com/boltdb/bolt"
+	. "github.com/boltdb/bolt/cmd/bolt"
 )
 
-func // Ensure that a list of buckets can be retrieved.
-TestBuckets(t *testing.T) {
+// Ensure that a list of buckets can be retrieved.
+func TestBuckets(t *testing.T) {
 	SetTestMode(true)
 	open(func(db *bolt.DB, path string) {
 		db.Update(func(tx *bolt.Tx) error {

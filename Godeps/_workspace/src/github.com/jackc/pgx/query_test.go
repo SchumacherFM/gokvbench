@@ -2,7 +2,7 @@ package pgx_test
 
 import (
 	"bytes"
-	"github.com/SchumacherFM/gokvbench/Godeps/_workspace/src/github.com/jackc/pgx"
+	"github.com/jackc/pgx"
 	"strings"
 	"testing"
 	"time"

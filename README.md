@@ -8,12 +8,16 @@ OSX 10.9.5; Processor  2.4 GHz Intel Core i5; Memory  8 GB 1600 MHz DDR3; Late 2
 
 ```
 $ ./gokvbench -redis -bolt
-main.testBoltWrite	    5000	    290589 ns/op	   47425 B/op	      61 allocs/op
-main.testBoltRead	  500000	      2913 ns/op	     648 B/op	      13 allocs/op
-main.testRedisWrite	   30000	     50575 ns/op	     136 B/op	       8 allocs/op
-main.testRedisRead	   30000	     48657 ns/op	     128 B/op	       9 allocs/op
-
-Done!
+main.testRedisWrite	   20000	     67270 ns/op	     136 B/op	       8 allocs/op
+main.testRedisRead	   20000	     70634 ns/op	     128 B/op	       9 allocs/op
+main.testBoltWrite	    5000	    526057 ns/op	   47425 B/op	      61 allocs/op
+main.testBoltRead	  500000	      3837 ns/op	     648 B/op	      13 allocs/op
+main.testGkvliteWrite	   50000	     29655 ns/op	     292 B/op	       8 allocs/op
+main.testGkvliteRead	 1000000	      2671 ns/op	      24 B/op	       3 allocs/op
+main.testDiskvWrite	   10000	    109660 ns/op	     528 B/op	      18 allocs/op
+main.testDiskvRead	  100000	     24315 ns/op	    2899 B/op	      21 allocs/op
+main.testCznicKvWrite	   10000	    156615 ns/op	    9437 B/op	      34 allocs/op
+main.testCznicKvRead	   10000	    372743 ns/op	  149407 B/op	      54 allocs/op
 ```
 
 More will follow...

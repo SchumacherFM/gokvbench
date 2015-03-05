@@ -2,9 +2,9 @@ package ledis
 
 import (
 	"fmt"
-	"github.com/SchumacherFM/gokvbench/Godeps/_workspace/src/github.com/siddontang/ledisdb/config"
 	"github.com/siddontang/go/filelock"
 	"github.com/siddontang/go/log"
+	"github.com/siddontang/ledisdb/config"
 	"github.com/siddontang/ledisdb/rpl"
 	"github.com/siddontang/ledisdb/store"
 	"io"
@@ -45,8 +45,6 @@ func Open(cfg *config.Config) (*Ledis, error) {
 
 	if cfg.Databases == 0 {
 		cfg.Databases = 16
-	} else if cfg.Databases > 256 {
-		cfg.Databases = 256
 	}
 
 	os.MkdirAll(cfg.DataDir, 0755)
@@ -85,8 +83,8 @@ func Open(cfg *config.Config) (*Ledis, error) {
 	}
 
 	l.dbs = make([]*DB, cfg.Databases)
-	for i := 0; i < cfg.Databases; i++ {
-		l.dbs[i] = l.newDB(uint8(i))
+	for i := uint8(0); i < cfg.Databases; i++ {
+		l.dbs[i] = l.newDB(i)
 	}
 
 	l.checkTTL()
@@ -113,7 +111,7 @@ func (l *Ledis) Close() {
 
 func (l *Ledis) Select(index int) (*DB, error) {
 	if index < 0 || index >= len(l.dbs) {
-		return nil, fmt.Errorf("invalid db index %d, must in [0, %d]", index, len(l.dbs)-1)
+		return nil, fmt.Errorf("invalid db index %d", index)
 	}
 
 	return l.dbs[index], nil

@@ -7,7 +7,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/SchumacherFM/gokvbench/Godeps/_workspace/src/github.com/boltdb/bolt"
+	"github.com/boltdb/bolt"
 	"github.com/codegangsta/cli"
 )
 
