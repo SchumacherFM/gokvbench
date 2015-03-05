@@ -57,9 +57,13 @@
 			"Rev": "535138d7bcd717d6531c701ef5933d98b1866257"
 		},
 		{
-			"ImportPath": "github.com/jackc/pgx",
-			"Comment": "v2.4.0-39-gcf674c6",
-			"Rev": "cf674c6958a5e04a2210e36e367ccd19ba4332db"
+			"ImportPath": "github.com/go-sql-driver/mysql",
+			"Comment": "v1.2-88-ga197e5d",
+			"Rev": "a197e5d40516f2e9f74dcee085a5f2d4604e94df"
+		},
+		{
+			"ImportPath": "github.com/mattn/go-sqlite3",
+			"Rev": "da2bf8a0f356364fb8189a5a276b5acf77839d30"
 		},
 		{
 			"ImportPath": "github.com/petar/GoLLRB/llrb",

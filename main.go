@@ -3,32 +3,31 @@
 package main
 
 import (
+	"bytes"
+	"database/sql"
 	"encoding/binary"
+	"flag"
+	"fmt"
 	"os"
 	"reflect"
 	"runtime"
 	"strconv"
 	"testing"
 
-	"flag"
-
-	"fmt"
+	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/mattn/go-sqlite3"
 
 	"github.com/boltdb/bolt"
 	cznic "github.com/cznic/kv"
 	"github.com/garyburd/redigo/redis"
-	"github.com/jackc/pgx"
 	"github.com/peterbourgon/diskv"
 	ledisConfig "github.com/siddontang/ledisdb/config"
 	"github.com/siddontang/ledisdb/ledis"
 	"github.com/steveyen/gkvlite"
+	"github.com/syndtr/goleveldb/leveldb"
 	// @todo https://github.com/zond/god
-	// @todo https://github.com/syndtr/goleveldb
 	// @todo https://github.com/HouzuoGuo/tiedot
-	// @todo mysql
-	// @todo sqlite3
 	// @todo https://github.com/golang/groupcache ???
-	"bytes"
 )
 
 const (
@@ -48,9 +47,17 @@ func main() {
 	tests := []*stores{
 		&stores{
 			bench: []benchF{
-				testPgWrite,
+				testMySQLWrite,
+				testMySQLRead,
 			},
-			run: flag.Bool("postgres", false, ""),
+			run: flag.Bool("mysql", false, ""),
+		},
+		&stores{
+			bench: []benchF{
+				testSQLiteWrite,
+				testSQLiteRead,
+			},
+			run: flag.Bool("sqlite", false, ""),
 		},
 		&stores{
 			bench: []benchF{
@@ -90,8 +97,16 @@ func main() {
 		&stores{
 			bench: []benchF{
 				testLedisDbWrite,
+				testLedisDbRead,
 			},
 			run: flag.Bool("ledisdb", false, ""),
+		},
+		&stores{
+			bench: []benchF{
+				testLevelDbWrite,
+				testLevelDbRead,
+			},
+			run: flag.Bool("leveldb", false, ""),
 		},
 	}
 	flag.Parse()
@@ -113,16 +128,76 @@ func main() {
 	fmt.Println("\nDone!")
 }
 
-func testPgWrite(b *testing.B) {
-	conn, err := pgx.Connect(pgx.ConnConfig{Host: "localhost", Port: 5432, Database: "test"})
+//func testPgWrite(b *testing.B) {
+//	conn, err := pgx.Connect(pgx.ConnConfig{Host: "localhost", Port: 5432, Database: "test"})
+//	isDoh(err)
+//	conn.Exec("truncate table ids")
+//	conn.Prepare("ids", "insert into ids values($1, $2)")
+//	b.ResetTimer()
+//	for i := 0; i < b.N; i++ {
+//		k, v := kv(i)
+//		conn.Exec("ids", k, v)
+//	}
+//}
+
+func sqlWrite(dn, dsn string, b *testing.B) *sql.DB {
+	db, err := sql.Open(dn, dsn)
 	isDoh(err)
-	conn.Exec("truncate table ids")
-	conn.Prepare("ids", "insert into ids values($1, $2)")
+	isDoh(db.Ping())
+
+	_, err = db.Exec("DROP TABLE IF EXISTS `ids`")
+	isDoh(err)
+	_, err = db.Exec("CREATE TABLE `ids` (k1 int(10) NOT NULL,v1 int(10) NOT NULL, PRIMARY KEY (k1))")
+	isDoh(err)
+	stmt, err := db.Prepare("insert into ids values(?, ?)")
+	isDoh(err)
+	defer stmt.Close()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		k, v := kv(i)
-		conn.Exec("ids", k, v)
+		_, _ = kv(i) // keep this because 3 additional allocs
+		_, err := stmt.Exec(i, i)
+		isDoh(err)
 	}
+	return db
+}
+
+func sqlRead(dn, dsn string, b *testing.B) {
+	db := sqlWrite(dn, dsn, b)
+	defer db.Close()
+	stmt, err := db.Prepare("select v1 from `ids` where k1 = ?")
+	defer stmt.Close()
+	isDoh(err)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		var v1 int
+		err = stmt.QueryRow(i).Scan(&v1)
+		isDoh(err)
+		if v1 != i {
+			b.Errorf("Expected: %d but got: %d", i, v1)
+		}
+	}
+}
+
+func testMySQLWrite(b *testing.B) {
+	db := sqlWrite("mysql", "test:test@tcp(127.0.0.1:3306)/test", b)
+	db.Close()
+}
+
+func testMySQLRead(b *testing.B) {
+	sqlRead("mysql", "test:test@tcp(127.0.0.1:3306)/test", b)
+}
+
+func testSQLiteWrite(b *testing.B) {
+	os.Remove("sqlite.db")
+	defer os.Remove("sqlite.db")
+	db := sqlWrite("sqlite3", "sqlite.db", b)
+	db.Close()
+}
+
+func testSQLiteRead(b *testing.B) {
+	os.Remove("sqlite.db")
+	defer os.Remove("sqlite.db")
+	sqlRead("sqlite3", "sqlite.db", b)
 }
 
 func redisWrite(b *testing.B) redis.Conn {
@@ -140,7 +215,7 @@ func redisWrite(b *testing.B) redis.Conn {
 
 func testRedisWrite(b *testing.B) {
 	conn := redisWrite(b)
-	defer conn.Close()
+	conn.Close()
 }
 
 func testRedisRead(b *testing.B) {
@@ -313,14 +388,13 @@ func testCznicKvRead(b *testing.B) {
 	}
 }
 
-func testLedisDbWrite(b *testing.B) {
+func ledisDbWrite(b *testing.B) (*ledis.Ledis, *ledis.DB) {
 	dataDir := "ledis-test"
 	os.RemoveAll(dataDir)
 	cfg := ledisConfig.NewConfigDefault()
 	cfg.DataDir = dataDir
 	l, err := ledis.Open(cfg)
 	isDoh(err)
-	defer l.Close()
 	db, err := l.Select(0)
 	isDoh(err)
 	b.ResetTimer()
@@ -328,7 +402,59 @@ func testLedisDbWrite(b *testing.B) {
 		k, v := kv(i)
 		isDoh(db.Set(k, v))
 	}
+	return l, db
+}
 
+func testLedisDbWrite(b *testing.B) {
+	l, _ := ledisDbWrite(b)
+	l.Close()
+}
+
+func testLedisDbRead(b *testing.B) {
+	l, db := ledisDbWrite(b)
+	defer l.Close()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		k, v := kv(i)
+		v2, err := db.Get(k)
+		if err != nil {
+			b.Error(err)
+		}
+		bc(b, v, v2)
+	}
+}
+
+func leveldbWrite(b *testing.B) *leveldb.DB {
+	dataDir := "leveldb-test"
+	os.RemoveAll(dataDir)
+	db, err := leveldb.OpenFile(dataDir, nil)
+	isDoh(err)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		k, v := kv(i)
+		isDoh(db.Put(k, v, nil))
+	}
+	return db
+}
+
+func testLevelDbWrite(b *testing.B) {
+	db := leveldbWrite(b)
+	db.Close()
+}
+
+func testLevelDbRead(b *testing.B) {
+	db := leveldbWrite(b)
+	defer db.Close()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		k, v := kv(i)
+		v2, err := db.Get(k, nil)
+		if err != nil {
+			b.Error(err)
+		}
+		bc(b, v, v2)
+	}
 }
 
 func kv(i int) ([]byte, []byte) {

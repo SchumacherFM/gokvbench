@@ -4,3 +4,5 @@ pbdiskv
 test.gkvlite
 bolt.db
 gokvbench
+sqlite.db
+leveldb-test
