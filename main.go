@@ -28,10 +28,7 @@ import (
 	// @todo https://github.com/zond/god
 	// @todo https://github.com/HouzuoGuo/tiedot
 	// @todo https://github.com/golang/groupcache ???
-)
-
-const (
-	READ_GENERATOR_ITERATION = 1e5
+	"strings"
 )
 
 type (
@@ -477,7 +474,8 @@ func isDoh(err error) {
 }
 
 func funcName(i interface{}) string {
-	return runtime.FuncForPC(reflect.ValueOf(i).Pointer()).Name()
+	fn := runtime.FuncForPC(reflect.ValueOf(i).Pointer()).Name()
+	return strings.Replace(fn, "main.test", "Benchmark", -1)
 }
 
 func bc(b *testing.B, expected, actual []byte) {

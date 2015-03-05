@@ -1,0 +1,20 @@
+PASS
+BenchmarkMySQLWrite	   10000	    107372 ns/op	     200 B/op	      14 allocs/op
+BenchmarkMySQLRead	   10000	    118697 ns/op	     384 B/op	      20 allocs/op
+BenchmarkSQLiteWrite	    3000	    460762 ns/op	     184 B/op	      12 allocs/op
+BenchmarkSQLiteRead	  100000	     18759 ns/op	     448 B/op	      21 allocs/op
+BenchmarkRedisWrite	   30000	     46952 ns/op	     136 B/op	       8 allocs/op
+BenchmarkRedisRead	   30000	     51060 ns/op	     128 B/op	       9 allocs/op
+BenchmarkBoltWrite	    5000	    343409 ns/op	   47422 B/op	      61 allocs/op
+BenchmarkBoltRead	  500000	      2834 ns/op	     648 B/op	      13 allocs/op
+BenchmarkGkvliteWrite	  100000	     23569 ns/op	     302 B/op	       8 allocs/op
+BenchmarkGkvliteRead	 1000000	      1989 ns/op	      24 B/op	       3 allocs/op
+BenchmarkDiskvWrite	   20000	     62543 ns/op	     528 B/op	      18 allocs/op
+BenchmarkDiskvRead	  200000	    151603 ns/op	    2895 B/op	      21 allocs/op
+BenchmarkCznicKvWrite	   10000	    119324 ns/op	    9436 B/op	      34 allocs/op
+BenchmarkCznicKvRead	   10000	    285671 ns/op	  149409 B/op	      54 allocs/op
+BenchmarkLedisDbWrite	  300000	      6278 ns/op	     423 B/op	      10 allocs/op
+BenchmarkLedisDbRead	  500000	      7473 ns/op	     802 B/op	      22 allocs/op
+BenchmarkLevelDbWrite	  300000	      6364 ns/op	     425 B/op	       9 allocs/op
+BenchmarkLevelDbRead	 1000000	      7547 ns/op	     724 B/op	      15 allocs/op
+ok

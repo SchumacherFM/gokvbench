@@ -2,50 +2,43 @@
 
 Based on the idea of https://gist.github.com/karlseguin/0ba24030fb12b10b686b
 
-Available persistent KV stores:
-
 OSX 10.9.5; Processor  2.4 GHz Intel Core i5; Memory  8 GB 1600 MHz DDR3; Late 2013
 
 ```
-$ ./gokvbench -redis -bolt
-main.testRedisWrite	   20000	     67270 ns/op	     136 B/op	       8 allocs/op
-main.testRedisRead	   20000	     70634 ns/op	     128 B/op	       9 allocs/op
-main.testBoltWrite	    5000	    526057 ns/op	   47425 B/op	      61 allocs/op
-main.testBoltRead	  500000	      3837 ns/op	     648 B/op	      13 allocs/op
-main.testGkvliteWrite	   50000	     29655 ns/op	     292 B/op	       8 allocs/op
-main.testGkvliteRead	 1000000	      2671 ns/op	      24 B/op	       3 allocs/op
-main.testDiskvWrite	   10000	    109660 ns/op	     528 B/op	      18 allocs/op
-main.testDiskvRead	  100000	     24315 ns/op	    2899 B/op	      21 allocs/op
-main.testCznicKvWrite	   10000	    156615 ns/op	    9437 B/op	      34 allocs/op
-main.testCznicKvRead	   10000	    372743 ns/op	  149407 B/op	      54 allocs/op
-```
-
-More will follow...
-
-Old write test on old MacBook Air:
-
-```
-$ ./gokvbench -bolt -gkvlite -redis -diskv -cznickv -ledisdb
-BoltDB	    3000	    461525 ns/op	   46333 B/op	      61 allocs/op
-Redis	   20000	     82473 ns/op	     136 B/op	       8 allocs/op
-gkvlite	   50000	     29106 ns/op	     292 B/op	       8 allocs/op
-diskv	   10000	    131318 ns/op	     696 B/op	      18 allocs/op
-cznickv	   10000	    156007 ns/op	    9432 B/op	      34 allocs/op
-ledisdb	  200000	     10370 ns/op	     474 B/op	      11 allocs/op
+$ ./gokvbench -all
+BenchmarkMySQLWrite	   	 10000	    115209 ns/op	     200 B/op	      14 allocs/op
+BenchmarkMySQLRead	   	 10000	    116643 ns/op	     384 B/op	      20 allocs/op
+BenchmarkSQLiteWrite	  3000	    509226 ns/op	     184 B/op	      12 allocs/op
+BenchmarkSQLiteRead	  	100000	     18932 ns/op	     448 B/op	      21 allocs/op
+BenchmarkRedisWrite	   	 30000	     50255 ns/op	     136 B/op	       8 allocs/op
+BenchmarkRedisRead	   	 30000	     53008 ns/op	     128 B/op	       9 allocs/op
+BenchmarkBoltWrite		  5000	    333430 ns/op	   47422 B/op	      61 allocs/op
+BenchmarkBoltRead	  	500000	      3143 ns/op	     648 B/op	      13 allocs/op
+BenchmarkGkvliteWrite	100000	     24653 ns/op	     302 B/op	       8 allocs/op
+BenchmarkGkvliteRead   1000000	      2037 ns/op	      24 B/op	       3 allocs/op
+BenchmarkDiskvWrite	   	 20000	     77249 ns/op	     528 B/op	      18 allocs/op
+BenchmarkDiskvRead	  	200000	    139040 ns/op	    2895 B/op	      21 allocs/op
+BenchmarkCznicKvWrite    10000	    118868 ns/op	    9436 B/op	      34 allocs/op
+BenchmarkCznicKvRead	 10000	    296773 ns/op	  149408 B/op	      54 allocs/op
+BenchmarkLedisDbWrite	300000	      6279 ns/op	     423 B/op	      10 allocs/op
+BenchmarkLedisDbRead	500000	      7200 ns/op	     801 B/op	      22 allocs/op
+BenchmarkLevelDbWrite	300000	      5859 ns/op	     425 B/op	       9 allocs/op
+BenchmarkLevelDbRead   1000000	      7522 ns/op	     725 B/op	      15 allocs/op
 
 Done!
 ```
 
+MySQL 5.6.23 via homebrew. Redis 2.8.19.
+
+More will follow...
+
 Feel free to submit your own or improvements to the test via PR.
 
-```
-$ go run main.go -h
-$ go run main.go -bolt -gkvlite -diskv -cznickv -ledisdb
-```
+Make sure that Redis runs on `127.0.0.1:6379` and if you test mysql: `test:test@127.0.0.1:3306`
 
-Make sure that Redis runs on `127.0.0.1:6379` and if you test postgres: `localhost:5432`
+The internal func `kv()` acquires 3 allocs so must subtract 3 allocs from the table above to get the real values.
 
-Short discussion on [Twitter](https://twitter.com/schumacherfm/status/573060236166234112)
+Short discussion on [Twitter](https://twitter.com/schumacherfm/status/573060236166234112).
 
 ### The MIT License (MIT)
 
